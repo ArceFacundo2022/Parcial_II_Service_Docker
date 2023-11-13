@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        h1 {
+            color: rgb(218, 18, 18);
+        }
+    </style>
+    <title>Parcial Docker</title>
+</head>
+
+<body>
+    <fieldset style="text-align: center;">
+
+        <legend><h1>Servicio REST</h1></legend>
+    
+        <form id="formulario">
+            <label for="nombre">Nombre:</label>
+            <input type="text" id="nombre" name="nombre" required>
+    
+            <label for="apellido">Apellido:</label>
+            <input type="text" id="apellido" name="apellido" required>
+    
+            <label for="dni">DNI:</label>
+            <input type="text" id="dni" name="dni" required>
+    
+            <button type="button" onclick="enviarFormulario()">Enviar</button>
+        </form>
+    </fieldset>
+
+    <fieldset style="text-align: center; align-items: center; justify-content: center;">
+        <legend><h1>Servicio SOAP</h1></legend>
+        <h2>Datos del Servicio SOAP:</h2>
+        <table id="soapTable" border="1">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Apellidos</th>
+                    <th>Nombres</th>
+                    <th>DNI</th>
+                </tr>
+            </thead>
+            <tbody>
+    
+            </tbody>
+        </table>
+    </fieldset>
+
+    <!-- Logica Rest -->
+    <script>
+        function enviarFormulario() {
+
+            var nombre = document.getElementById('nombre').value;
+            var apellido = document.getElementById('apellido').value;
+            var dni = document.getElementById('dni').value;
+
+            var datos = {
+                apellidos: apellido,
+                nombres: nombre,
+                dni: dni
+            };
+
+            fetch('http://localhost:8080/insertar_con_rest', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(datos),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert('datos guardados con exito 👌')
+                    console.log('Respuesta del servicio REST:', data);
+                })
+                .catch(error => {
+                    console.error('Error en la solicitud REST:', error);
+                });
+        }
+    </script>
+
+    <!-- Logica Soap -->
+    <script>
+        function actualizarTablaSOAP(datos) {
+            const tablaSOAP = document.getElementById("soapTable");
+            tablaSOAP.innerHTML = "";
+
+            const encabezados = ["ID", "Apellidos", "Nombres", "DNI"];
+            const encabezadoRow = tablaSOAP.insertRow();
+            encabezados.forEach(encabezado => {
+                const cell = encabezadoRow.insertCell();
+                cell.innerHTML = `<b>${encabezado}</b>`;
+            });
+
+            datos.forEach(alumno => {
+                const row = tablaSOAP.insertRow();
+                Object.values(alumno).forEach(valor => {
+                    const cell = row.insertCell();
+                    cell.innerHTML = valor;
+                });
+            });
+        }
+
+        async function cargarDatosSOAP() {
+            try {
+                var myHeaders = new Headers();
+                myHeaders.append("Content-Type", "application/xml");
+
+                var raw = "<soapenv:Envelope\r\n  xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\"\r\n  xmlns:web=\"http://www.example.com/\">\r\n  <soapenv:Header/>\r\n  <soapenv:Body>\r\n    <web:consultarAlumnos/>\r\n  </soapenv:Body>\r\n</soapenv:Envelope>";
+
+                var requestOptions = {
+                    method: 'POST',
+                    headers: myHeaders,
+                    body: raw,
+                    redirect: 'follow'
+                };
+
+                const response = await fetch("http://localhost:8888/consultar_con_soap", requestOptions);
+
+                if (!response.ok) {
+                    throw new Error(`Error al obtener datos del servicio SOAP: ${response.status} ${response.statusText}`);
+                }
+
+                const text = await response.text();
+                console.log("text ",text)
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(text, "text/xml");
+
+                console.log("xml ",xmlDoc)
+
+                // Extraer datos del XML
+                const alumnosNodeList = xmlDoc.querySelectorAll("alumnos");
+                console.log("data alumnos ",alumnosNodeList)
+                const alumnos = Array.from(alumnosNodeList).map(alumnoNode => {
+                    return {
+                        id: alumnoNode.querySelector("id").textContent,
+                        apellidos: alumnoNode.querySelector("apellidos").textContent,
+                        nombres: alumnoNode.querySelector("nombres").textContent,
+                        dni: alumnoNode.querySelector("dni").textContent,
+                    };
+                });
+
+                console.log("Datos recibidos del servicio SOAP", alumnos);
+                actualizarTablaSOAP(alumnos);
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        cargarDatosSOAP();
+    </script>
+    <style>
+        table {
+          border-collapse: collapse;
+          border: 1px solid #ccc;
+          caption-side: bottom;
+          margin-left: 40%
+
+        }
+
+        th {
+          padding: 10px;
+        }
+
+        th {
+          background: #000;
+          color: #fff;
+          text-transform: uppercase;
+        }
+
+        td {
+          text-align: center;
+          border-bottom: 2px solid #111;
+          color: #333;
+          font-size: 18px;
+          border: 1px;
+        }
+
+        th, td {
+          border: 1px solid #888;
+          padding: 10px;
+        }
+
+        tfoot td {
+          background: #666;
+          color: #eee;
+          border: 0;
+        }
+
+        tr.title th {
+          background: #000;
+          color: #fff;
+          border: 0;
+        }
+      </style>
+</body>
+
+</html>
